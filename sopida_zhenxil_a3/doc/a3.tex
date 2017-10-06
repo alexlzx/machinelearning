@@ -1,0 +1,327 @@
+\documentclass{article}
+
+
+
+\usepackage{fullpage}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{graphicx}
+\usepackage{parskip}
+\usepackage{amssymb}
+\usepackage{listings}
+
+\begin{document}
+
+\definecolor{blu}{rgb}{0,0,1}
+\def\blu#1{{\color{blu}#1}}
+\definecolor{gre}{rgb}{0,.5,0}
+\def\gre#1{{\color{gre}#1}}
+\definecolor{red}{rgb}{1,0,0}
+\def\red#1{{\color{red}#1}}
+\def\norm#1{\|#1\|}
+\newcommand{\argmin}[1]{\mathop{\hbox{argmin}}_{#1}}
+\newcommand{\argmax}[1]{\mathop{\hbox{argmax}}_{#1}}
+\def\R{\mathbb{R}}
+\newcommand{\fig}[2]{\includegraphics[width=#1\textwidth]{#2}}
+\newcommand{\centerfig}[2]{\begin{center}\includegraphics[width=#1\textwidth]{#2}\end{center}}
+\def\items#1{\begin{itemize}#1\end{itemize}}
+\def\enum#1{\begin{enumerate}#1\end{enumerate}}
+\newcommand{\code}[1]{\lstinputlisting[language=Matlab]{#1}}
+\newcommand{\half}{\frac 1 2}
+\def\argmax{\mathop{\rm arg\,max}}
+\def\argmin{\mathop{\rm arg\,min}}
+\def\rubric#1{\gre{Rubric: \{#1\}}}{}
+
+
+
+\title{CPSC 340 Assignment 3 (due Friday, June 9 at 11:59pm)}
+\date{}
+\maketitle
+
+\vspace{-7em}
+
+\section*{Instructions}
+\rubric{mechanics:3}
+
+The above points are allocated for following the general homework instructions.
+
+\vspace{1em}
+
+\textbf{A note on Python 2}: if you are using Python 2.7, please add
+\begin{verbatim}
+from __future__ import division
+\end{verbatim}
+to the top of each Python file. You should also grab the Python 2 compatible data files from the ``home'' repo on GitHub, like you did for Assignment 2.
+
+
+\section{Linear Regression and Nonlinear Bases}
+
+In class we discussed fitting a linear regression model by minimizing the squared error.
+In this question, you will start with a data set where least squares performs poorly.
+You will then explore how adding a bias variable and using nonlinear (polynomial) bases can drastically improve the performance.
+You will also explore how the complexity of a basis affects both the training error and the test error.
+In the final part of the question, it will be up to you to design a basis with better performance than polynomial bases.
+
+\subsection{Adding a Bias Variable}
+\rubric{code:3,reasoning:1}
+
+If you run  \verb|python main.py -q 1|, it will:
+\enum{
+\item Load a one-dimensional regression dataset.
+\item Fit a least-squares linear regression model.
+\item Report the training error.
+\item Report the test error (on a dataset not used for training).
+\item Draw a figure showing the training data and what the linear model looks like.
+}
+Unfortunately, this is an awful model of the data. The average squared training error on the data set is over 28000
+(as is the test error), and the figure produced by the demo confirms that the predictions are usually nowhere near
+ the training data:
+\centerfig{.5}{../figs/leastSquares.pdf}
+The $y$-intercept of this data is clearly not zero (it looks like it's closer to $200$),
+so we should expect to improve performance by adding a \emph{bias} (a.k.a. intercept) variable, so that our model is
+\[
+y_i = w^Tx_i + w_0.
+\]
+instead of
+\[
+y_i = w^Tx_i.
+\]
+\blu{In file \emph{linear\_model.py}, complete the class, \emph{LeastSquaresBias}, that has the same input/model/predict format as the \emph{LeastSquares} class, but that adds a \emph{bias} variable $w_0$. Hand in your new class, the updated plot, and the updated training/test error.}
+
+Hint: recall that adding a bias $w_0$ is equivalent to adding a column of ones to the matrix $X$. Don't forget that you need to do the same transformation in the \emph{predict} function.
+
+
+\subsection{Polynomial Basis}
+\rubric{code:4,reasoning:1}
+
+Adding a bias variable improves the prediction substantially, but the model is still problematic because the target seems to be a \emph{non-linear} function of the input.
+Complete \emph{LeastSquarePoly} class, that takes a data vector $x$ (i.e., assuming we only have one feature) and the polynomial order $p$. The function should perform a least squares fit based on a matrix $Z$ where each of its rows contains the values $(x_{i})^j$ for $j=0$ up to $p$. E.g., \emph{LeastSquaresPoly.fit(x,y)}  with $p = 3$ should form the matrix
+\[
+Z =
+\left[\begin{array}{cccc}
+1 & x_1 & (x_1)^2 & (x_1)^3\\
+1 & x_2 & (x_2)^2 & (x_2)^3\\
+\vdots\\
+1 & x_n & (x_n)^2 & (x_N)^3\\
+\end{array}
+\right],
+\]
+and fit a least squares model based on it.
+\blu{Hand in the new class, and report the training and test error for $p = 0$ through $p= 10$. Explain the effect of $p$ on the training error and on the test error.}
+
+Note: you should write the code yourself; don't use a library like sklearn's \texttt{PolynomialFeatures}.
+
+
+\section{Non-Parametric Bases and Cross-Validation}
+
+Unfortunately, in practice we often don't know what basis to use.
+However, if we have enough data then we can make up for this by using a basis that is flexible enough to
+model any reasonable function. These may perform poorly if we don't have much data, but can
+ perform almost as well as the optimal basis as the size of the dataset grows.
+ In this question you will explore using Gaussian radial basis functions (RBFs),
+ which have this property. These RBFs depend on a hyperparameter $\sigma$, which
+ (like $p$ in the polynomial basis) can be chosen using a validation set.
+ In this question, you will also see how cross-validation allows you to tune
+ parameters of the model on a larger dataset than a strict training/validation split would allow.
+
+\subsection{Proper Training and Validation Sets}
+\rubric{reasoning:3}
+
+If you run \verb|python main.py -q 2.1|, it will load a dataset and split the training examples
+ into a ``train" and a ``validation" set. It will then search for the best value of $\sigma$
+ for the RBF basis (it also uses regularization since $Z^TZ$ tends to be very close to singular).
+  Once it has the ``best" value of $\sigma$, it re-trains on the entire dataset and reports the
+  training error on the full training set as well as the error on the test set.
+
+Unfortunately, there is a problem with the way this is done. Because of this problem,
+the RBF basis doesn't perform much better than a linear model.
+\blu{What is the problem with this training/validation/testing procedure? How can you fix this problem?}
+
+Hint: The problem is not with the \texttt{LeastSquaresRBF} code, it is with the
+training/validation/testing procedure.
+You may want to plot the models that are considered during the search for $\sigma$.
+
+
+
+\subsection{Cross-Validation}
+\rubric{code:3,reasoning:1}
+
+Using the standard solution to the above problem, a strange behaviour appears:
+if you run the script more than once it might choose different values of $\sigma$.
+It rarely performs too badly, but it's clear that the randomization has an effect
+on the value of $\sigma$ that we choose. This variability would be reduced if we
+had a larger ``train" and ``validation" set, and one way to simulate this is
+with \emph{cross-validation}. \blu{Modify the training/validation procedure to
+use 10-fold cross-validation to select $\sigma$, and hand in your code.
+What value of $\sigma$ does this procedure typically select?}
+
+Note: your should implement this yourself. Don't use a library like sklearn's \verb|cross_val_score|.
+
+
+\subsection{Cost of Non-Parametric Bases}
+\rubric{reasoning:3}
+
+When dealing with larger datasets, an important issue is the dependence of the
+computational cost on the number of training examples $n$ and the number of
+features $d$. \blu{What is the cost in big-O notation of training the model
+on $n$ training examples with $d$ features under (a) the linear basis and
+(b) Gaussian RBFs (for a fixed $\sigma$)? What is the cost of
+classifying $t$ new examples under each of these two bases? When are RBFs
+cheaper to train? When are RBFs cheaper to test?}
+
+
+\section{Logistic Regression with Sparse Regularization}
+
+If you run  \verb|python main.py -q 3|, it will:
+\enum{
+\item Load a binary classification dataset containing a training and a validation set.
+\item `Standardize' the columns of $X$ and add a bias variable (in \emph{utils.load\_dataset}).
+\item Apply the same transformation to $Xvalidate$ (in \emph{utils.load\_dataset}).
+\item Fit a logistic regression model.
+\item Report the number of features selected by the model (number of non-zero regression weights).
+\item Report the error on the validation set.
+}
+Logistic regression does ok on this dataset,
+but it uses all the features (even though only the prime-numbered features are relevant)
+and the validation error is above the minimum achievable for this model
+(which is 1 percent, if you have enough data and know which features are relevant).
+In this question, you will modify this demo to use different forms of regularization
+ to improve on these aspects.
+
+Note: your results may vary a bit depending on versions of Python and its libraries.
+
+
+\subsection{L2-Regularization}
+\rubric{code:2}
+
+Make a new class, \emph{logRegL2}, that takes an input parameter $\lambda$ and fits a logistic regression model with L2-regularization. Specifically, while \emph{logReg} computes $w$ by minimizing
+\[
+f(w) = \sum_{i=1}^n \log(1+\exp(-y_iw^Tx_i)),
+\]
+your new function \emph{logRegL2} should compute $w$ by minimizing
+\[
+f(w) = \sum_{i=1}^n \left[\log(1+\exp(-y_iw^Tx_i))\right] + \frac{\lambda}{2}\norm{w}^2.
+\]
+\blu{Hand in your updated code. Using this new code, report the number of non-zeroes and the validation error with $\lambda = 1$.}
+
+Note: as you may have noticed, \texttt{lambda} is a special keyword in Python and therefore we can't use it as a variable name.
+As an alternative I humbly suggest \texttt{lammy}, which is what my neice calls her stuffed animal toy lamb.
+However, you are free to deviate from this suggestion.
+
+\subsection{L1-Regularization}
+\rubric{code:3}
+
+Make a new class, \emph{logRegL1}, that takes an input parameter $\lambda$ and fits a logistic regression model with L1-regularization,
+\[
+f(w) = \sum_{i=1}^n \left[\log(1+\exp(-y_iw^Tx_i))\right] + \lambda\norm{w}_1.
+\]
+\blu{Hand in your updated code. Using this new code, report the number of non-zeroes and the validation error with $\lambda = 1$.}
+
+
+You should use the function \emph{minimizers.findMinL1}, which implements a
+proximal-gradient method to minimize the sum of a differentiable function $g$ and $\lambda\norm{w}_1$,
+\[
+f(w) = g(w) + \lambda \norm{w}_1.
+\]
+This function has a similar interface to \emph{findMin}, except that you (a)
+only provide the code to compute the function/gradient of the differentiable
+part $g$ and (b) need to provide the value $\lambda$.
+
+
+\subsection{L0-Regularization}
+\rubric{code:4}
+
+The class \emph{logRegL0} contains part of the code needed to implement the \emph{forward selection} algorithm,
+which approximates the solution with L0-regularization,
+\[
+f(w) =  \sum_{i=1}^n \left[\log(1+\exp(-y_iw^Tx_i))\right] + \lambda\norm{w}_0.
+\]
+The \texttt{for} loop in this function is missing the part where we fit the model using the subset \emph{selected\_new},
+then compute the score and updates the \emph{minLoss/bestFeature}.
+Modify the \texttt{for} loop in this code so that it fits the model using only
+the features \emph{selected\_new}, computes the score above using these features,
+and updates the \emph{minLoss/bestFeature} variables.
+\blu{Hand in your updated code. Using this new code,
+report the number of non-zeroes and the validation error with $\lambda = 1$.}
+
+Note that the code differs a bit from what we discussed in class,
+since we assume that the first feature is the bias variable and assume that the
+bias variable is always included. Also, note that for this particular case using
+the L0-norm with $\lambda$ is equivalent to what is known as the Bayesian
+information criterion (BIC) for variable selection.
+
+\subsection{Discussion}
+\rubric{reasoning:2}
+
+In a short paragraph, briefly discuss your results from the above. How do the
+different forms of regularization compare with each other?
+Can you provide some intuition for your results? No need to write a long essay, please!
+
+
+\section{Multi-Class Logistic}
+
+If you run \verb|python main.py -q 4| the code loads a multi-class
+classification dataset with $y_i \in \{0,1,2,3,4\}$ and fits a `one-vs-all' classification
+model using least squares, then reports the validation error and shows a plot of the data/classifier.
+The performance on the validation set is ok, but could be much better.
+For example, this classifier never even predicts that examples will be in classes 0 or 4.
+
+
+\subsection{One-vs-all Logistic Regression}
+\rubric{code:2}
+
+Using the squared error on this problem hurts performance because it has `bad errors' (the model gets penalized if it classifies examples `too correctly').
+Write a new class, \emph{logLinearClassifier}, that replaces the squared loss in the one-vs-all model with the logistic loss. \blu{Hand in the code and report the validation error}.
+
+
+\subsection{Softmax Classification}
+\rubric{reasoning:2}
+
+Using a one-vs-all classifier hurts performance because the classifiers are fit independently, so there is no attempt to calibrate the columns of the matrix $W$. An alternative to this independent model is to use the softmax probability,
+\[
+p(y_i | W, x_i) = \frac{\exp(w_{y_i}^Tx_i)}{\sum_{c=1}^k\exp(w_c^Tx_i)}.
+\]
+Here $c$ is a possible label and $w_{c'}$ is column $c'$ of $W$. Similarly, $y_i$ is the training label, $w_{y_i}$ is column $y_i$ of $W$, and in this setting we are assuming a discrete label $y_i \in \{1,2,3\}$. Before we move on to implementing the softmax classifier, let's do a simple example:
+
+Consider the dataset below, which has $10$ training examples and $2$ features:
+\[
+X = \begin{bmatrix}0 & 1\\1 & 0\\ 1 & 0\\ 1 & 1\\ 1 & 1\\ 0 & 0\\  1 & 0\\  1 & 0\\  1 & 1\\  1 &0\end{bmatrix}, \quad y = \begin{bmatrix}1\\1\\1\\2\\2\\2\\3\\3\\3\\3\end{bmatrix}.
+\]
+Suppose that you want to classify the following test example:
+\[
+\hat{x} = \begin{bmatrix}1 & 1\end{bmatrix}.
+\]
+Suppose we fit a multi-class linear classifier using the softmax loss, and we obtain the following weight matrix:
+\[
+W =
+\begin{bmatrix}
++2 & +2 & +3\\
+-1 & +2 & -1\\
+\end{bmatrix}
+\]
+\blu{Under this model, what class label would we assign to the test example? (Show your work.)}
+
+
+\subsection{Softmax Loss}
+\rubric{reasoning:3}
+
+The loss function corresponding to the negative logarithm of the softmax probability is given by
+\[
+f(W) = \sum_{i=1}^n \left[-w_{y_i}^Tx_i + \log\left(\sum_{c' = 1}^k \exp(w_{c'}^Tx_i)\right)\right].
+\]
+Derive the derivative of this loss function with respect to a particular element $W_{jc}$. Try to simplify the derivative as much as possible (but you can express the result in summation notation).
+
+Hint: for the gradient you can use $x_{ij}$ to refer to element $j$ of example $i$. You can use an `indicator' function, $I(y_i = c)$, which is $1$ when $y_i = c$ and is $0$ otherwise. Note that you can use the definition of the softmax probability to simplify the derivative.
+
+
+\subsection{Softmax Classifier}
+\rubric{code:3}
+
+Make a new class, \emph{softmaxClassifier}, which fits $W$ using the softmax loss from the previous section  instead of fitting $k$ independent classifiers. \blu{Hand in the code and report the validation error}.
+
+Hint: you may want to use \verb|utils.check_gradient| to check that your gradient code is correct.
+
+
+\end{document}

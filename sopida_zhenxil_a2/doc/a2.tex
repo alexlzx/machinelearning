@@ -1,0 +1,284 @@
+\documentclass{article}
+
+\usepackage[]{algorithm2e}
+
+\usepackage{fullpage}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{graphicx}
+\usepackage{parskip}
+\usepackage{amssymb}
+\usepackage{listings} 
+
+\begin{document}
+
+\definecolor{blu}{rgb}{0,0,1}
+\def\blu#1{{\color{blu}#1}}
+\definecolor{gre}{rgb}{0,.5,0}
+\def\gre#1{{\color{gre}#1}}
+\definecolor{red}{rgb}{1,0,0}
+\def\red#1{{\color{red}#1}}
+\def\norm#1{\|#1\|}
+\newcommand{\argmin}[1]{\mathop{\hbox{argmin}}_{#1}}
+\newcommand{\argmax}[1]{\mathop{\hbox{argmax}}_{#1}}
+\def\R{\mathbb{R}}
+\newcommand{\fig}[2]{\includegraphics[width=#1\textwidth]{#2}}
+\newcommand{\centerfig}[2]{\begin{center}\includegraphics[width=#1\textwidth]{#2}\end{center}}
+\def\items#1{\begin{itemize}#1\end{itemize}}
+\def\enum#1{\begin{enumerate}#1\end{enumerate}}
+\def\answer#1{\iftoggle{answers}{\blu{Answer}:\\#1}}
+\def\rubric#1{\gre{Rubric: \{#1\}}}{}
+
+
+\title{CPSC 340 Assignment 2 (due Tuesday, May 30 at 11:59pm)}
+\date{}
+\maketitle
+
+\vspace{-7em}
+
+\section*{Instructions}
+\rubric{mechanics:3}
+
+The above points are allocated for compliance with the general homework instructions (on GitHub).
+
+Other notes:
+\begin{itemize}
+\item We use \blu{blue} to highlight the deliverables that you must answer/do/submit with the assignment.
+\item You may want to add sections to \emph{main.py}. To do this, add an \texttt{elif} statement in the same format as the existing ones, but also make sure to add the new option to the set of \texttt{choices} at the top of the file. If you try to run an option that's not listed in \texttt{choices} you will get an error.
+\item If you're using Python 2.7, you'll need to grab the alternate data from GitHub. You don't have to overwrite the old data; once you copy in the Python 2 data into a directory called \emph{data\_python2}, you can tell the code to use it by changing the \texttt{DATA\string_DIR} variable at the top of \emph{utils.py}.
+You should also add \verb|from __future__ import division| at the beginning of every Python file.
+\end{itemize}
+
+
+\section{K-Means Clustering}
+
+If you run \verb|python main.py -q 1|, it will load a dataset with two features and a very obvious clustering structure. It will then apply the $k$-means algorithm with a random initialization. The result of applying the algorithm will thus depend on the randomization, but a typical run might look like this:
+\centerfig{.5}{../figs/kmeans_rinit1.png}
+(Note that the colours are arbitrary.) But the `correct' clustering (that was used to make the data) is this:
+\centerfig{.5}{../figs/kmeans_rinit2.png}
+
+
+\subsection{Selecting among Initializations}
+\rubric{code:4}
+
+If you run the demo several times, it will find different clusterings. To select among clusterings for a \emph{fixed} value of $k$, one strategy is to minimize the sum of squared distances between examples $x_i$ and their means $w_{c_i}$,
+\[
+f(w_1,w_2,\dots,w_k,c_1,c_2,\dots,c_n) = \sum_{i=1}^n \norm{x_i - w_{c_i}}_2^2 = \sum_{i=1}^n \sum_{j=1}^d (x_{ij} - w_{c_ij})^2.
+\]
+ where $c_i$ is the \emph{index} of the closest mean to $x_i$ (an integer), and $w_{c_i}$ is the \emph{location} of the closest mean to $x_i$ (a vector in $\mathbb{R}^d$). This is a natural criterion because the steps of $k$-means alternately optimize this objective function in terms of the $w_c$ and the $c_i$ values.
+
+ \blu{\enum{
+ \item In the \emph{kmeans.py} file, add a new function called \emph{error} that takes the same input as the \emph{predict} function but that returns the value of this above objective function. Hand in your code.
+ \item Using the \emph{utils.plot\_2dclustering} function, output the clustering obtained by running $k$-means 50 times (with $k=4$) and taking the one with the lowest error.
+ }}
+
+
+
+ \subsection{Selecting $k$}
+ \rubric{reasoning:4}
+
+ We now turn to the much-more-difficult task of choosing the number of clusters $k$.
+
+ \blu{\enum{
+ \item Explain why the above objective function cannot be used to choose $k$.
+ \item Explain why even evaluating this objective function on test data still wouldn't be a suitable approach to choosing $k$.
+ \item Hand in a plot of the minimum error found across 50 random initializations, as you vary $k$ from $1$ to $10$.
+ \item The \emph{elbow method} for choosing $k$ consists of looking at the above plot and visually trying to choose the $k$ that makes the sharpest ``elbow" (the biggest change in slope). What values of $k$ might be reasonable according to this method? Note: there is not a single correct answer here; it is somewhat open to interpretation and there is a range of reasonable answers.   
+ }}
+
+
+\subsection{$k$-Medians}
+\rubric{reasoning:3, code:3}
+
+ The data in \emph{clusterData2} is the exact same as the above data, except it has 4 outliers that are very far away from the data.
+
+ \blu{\enum{
+ \item Using the \emph{plot\_2dclustering} function, output the clustering obtained by running $k$-means 50 times (with $k=4$) on \emph{clusterData2} and taking the one with the lowest error. Are you satisfied with the result?
+ \item What values of $k$ might be chosen by the elbow method for this dataset?
+ \item Implement the $k$-\emph{medians} algorithm, which assigns examples to the nearest $w_c$ in the L1-norm and updates the $w_c$ by setting them to the ``median" of the points assigned to the cluster (we define the $d$-dimensional median as the concatenation of the median of the points along each dimension). Hand in your code.
+\item Using the L1-norm version of the error (where $c_i$ now represents the closest median in the L1-norm),
+\[
+f(w_1,w_2,\dots,w_k,c_1,c_2,\dots,c_n) = \sum_{i=1}^n \norm{x_i - w_{c_i}}_1 = \sum_{i=1}^n \sum_{j=1}^d |x_{ij} - w_{c_ij}|,
+\]
+run $k$-medians 50 times (with $k=4$) on \emph{clusterData2} and take the one with lowest error. Plot the clustering with the \emph{plot\_2dclustering} function. Are you satisfied with the result?
+ }}
+
+
+\subsection{Effect of Parameters on DBSCAN}
+\rubric{code:2}
+
+If you run \verb|python main -q 1.4|, it will apply the basic density-based clustering algorithm to the dataset from the previous part. The final output should look like this:
+\centerfig{.7}{../figs/dbscan.png}
+Even though we know that each object was generated from one of four clusters (and we have 4 outliers), the algorithm finds 6 clusters and does not assign some objects to any cluster. However, the assignments will change if we change the parameters of the algorithm. Find and report values for the two parameters, \texttt{eps} (which we called the radius, in class) and \texttt{minPts}, such that the density-based clustering method finds:
+\blu{\enum{
+\item The 4 ``true" clusters.
+\item 3 clusters (merging the top two, which also seems like a reasonable interpretation).
+\item 2 clusters.
+\item 1 cluster.
+}}
+
+
+\section{Vector Quantization and Density-Based Clustering}
+\rubric{code:3}
+
+Discovering object groups is one motivation for clustering. Another motivation is \emph{vector quantization}, where we find a prototype point for each cluster and replace points in the cluster by their prototype. If our inputs are images, vector quantization gives us a rudimentary image compression algorithm.
+
+Your task is to implement image quantization in \emph{quantize\_image.py} with \texttt{quantize} and \texttt{dequantize} functions. The \texttt{quantize} function should take in an image and, using the pixels as examples and the 3 colour channels as features, run $k$-means clustering on the data with $2^b$ clusters for some hyperparameter $b$. The code should store the cluster means and return the cluster assignments. The \texttt{dequantize} function should return a version of the image (the same size as the original) where each pixel's orignal colour is replaced with the nearest prototype colour. 
+
+To understand why this is compression, consider the original image space. Say the image can take on the values $0,1,\ldots,254,255$ in each colour channel. Since $2^8=256$ this means we need 8 bits to represent each colour channel, for a total of 24 bits per pixel. Using our method, we are restricting each pixel to only take on one of $2^b$ colour values. In other words, we are compressing each pixel from a 24-bit colour representation to a $b$-bit colour representation by picking the $2^b$ prototype colours that are ``most representative'' given the content of the image. So, for example, if $b=6$ then we have 4x compression.
+
+The dataset \emph{dog} contains a 3D-array $I$ representing the RGB values of a picture of a dog. You can view the picture by using the \emph{plt.imshow} function, or by saving it to a file. \blu{Implement the \emph{quantize} and \emph{dequantize} functions and show the image obtained if you encode the colours using $1$, $2$, $4$, and $6$ bits with the dog image.}
+
+Hint: the \emph{numpy.reshape} function will come in handy.
+
+
+
+
+\section{Vectors, Matrices, and Quadratic Functions}
+
+The first part of this question makes you review basic operations on vectors and matrices. If you are rusty on basic vector and matrix operations, see the notes on linear algebra on the course webpage. The second part of the question gives you practice taking the gradient of linear and quadratic functions, and the third part gives you practice finding the minimizer of quadratic functions.
+
+\subsection{Basic Operations}
+\rubric{reasoning:3}
+
+\noindent Using the definitions below,
+\[
+\alpha = 5,\quad
+x = \left[\begin{array}{c}
+2\\
+-3\\
+\end{array}\right], \quad
+y = \left[\begin{array}{c}
+1\\
+4\\
+\end{array}\right],\quad
+z = \left[\begin{array}{c}
+2\\
+0\\
+1\end{array}\right],
+\quad
+A = \left[\begin{array}{ccc}
+1 & 2\\
+2 & 3\\
+3 & -2
+\end{array}\right],
+\]
+\blu{evaluate the following expressions} (show your work, but you may use answers from previous parts to simplify calculations):\\
+\enum{
+\item $x^Tx$.
+\item $\norm{x}^2$.
+\item $x^T(x + \alpha y)$.
+\item $Ax$
+\item $z^TAx$
+\item $A^TA$.
+}
+
+If $\{\alpha,\beta\}$ are scalars, $\{x,y,z\}$ are real-valued column-vectors of length $d$,
+and $\{A,B,C\}$ are real-valued $d\times d$ matrices, \blu{state whether each of the below statements is true or false in general
+and give a short explanation.}
+\enum{
+\addtocounter{enumi}{6}
+\item $yy^Ty = \norm{y}^2y$.
+\item $x^TA^T(Ay + Az) = x^TA^TAy + z^TA^TAx$.
+\item $x^T(B + C) = Bx + Cx$.
+\item $(A + BC)^T = A^T + C^TB^T$.
+\item $(x-y)^T(x-y) = \norm{x}^2 - x^Ty + \norm{y}^2$.
+\item $(x-y)^T(x+y) = \norm{x}^2 - \norm{y}^2$.
+}
+
+Hint: check the dimensions of the result, and remember that matrix multiplication is generally not commutative.
+
+
+\subsection{Converting to Matrix/Vector/Norm Notation}
+\rubric{reasoning:2}
+
+Using our standard supervised learning notation ($X$, $y$, $w$)
+express the following functions in terms of vectors, matrices, and norms (there should be no summations or maximums).
+\blu{\enum{
+\item $\sum_{i=1}^n |w^Tx_i - y_i|$.
+\item $\max_{i \in \{1,2,\dots,n\}} |w^Tx_i  - y_i| + \frac{\lambda}{2}\sum_{j=1}^n w_j^2$.
+}}
+
+Note: we'll discuss the interpretation of Q3.2.2 in Lecture 15.
+
+
+\subsection{Minimizing Quadratic Functions as Linear Systems}
+\rubric{reasoning:3}
+
+Write finding a minimizer $w$ of the functions below as a system of linear equations (using vector/matrix notation and simplifying as much as possible). Note that all the functions below are convex  so finding a $w$ with $\nabla f(w) = 0$ is sufficient to minimize the functions (but show your work in getting to this point).
+\blu{\enum{
+\item $f(w) = \frac{1}{2}\norm{w-v}^2$.
+\item $f(w) = \frac{1}{2}\norm{w}^2 + w^TX^Ty$ .
+\item $f(w) = \frac{1}{2}\sum_{i=1}^n z_i (w^Tx_i - y_i)^2$.
+}}
+Above we assume that $v$ is a $d \times 1$ vector.
+
+Hint: Once you convert to vector/matrix notation, you can use the results from class to quickly compute these quantities term-wise.
+As a sanity check for your derivation, make sure that your results have the right dimensions.
+
+
+\section{Robust Regression and Gradient Descent}
+
+If you run \verb|python main.py -q 4|, it will load a one-dimensional regression
+dataset that has a non-trivial number of `outlier' data points.
+These points do not fit the general trend of the rest of the data,
+and pull the least squares model away from the main downward trend that most data points exhibit:
+\centerfig{.7}{../figs/least_squares_outliers.pdf}
+
+\subsection{Weighted Least Squares in One Dimension}
+\rubric{code:3}
+
+One of the most common variations on least squares is \emph{weighted} least squares. In this formulation, we have a weight $z_i$ for every training example. To fit the model, we minimize the weighted squared error,
+\[
+f(w) =  \frac{1}{2}\sum_{i=1}^n z_i(w^Tx_i - y_i)^2.
+\]
+In this formulation, the model focuses on making the error small for examples $i$ where $z_i$ is high. Similarly, if $z_i$ is low then the model allows a larger error.
+
+Complete the model class, \emph{WeightedLeastSquares}, that implements this model
+(note that Q3.3.3 asks you to show how this formulation can be solved as a linear system).
+Apply this model to the data containing outliers, setting $z = 1$ for the first
+$400$ data points and $z = 0.1$ for the last $100$ data points (which are the outliers).
+\blu{Hand in your code and the updated plot}.
+
+
+
+\subsection{Smooth Approximation to the L1-Norm}
+\rubric{reasoning:3}
+
+Unfortunately, we typically do not know the identities of the outliers. In situations where we suspect that there are outliers, but we do not know which examples are outliers, it makes sense to use a loss function that is more robust to outliers. In class, we discussed using the sum of absolute values objective,
+\[
+f(w) = \sum_{i=1}^n |w^Tx_i - y_i|.
+\]
+This is less sensitive to outliers than least squares, but it is non-differentiable and harder to optimize. Nevertheless, there are various smooth approximations to the absolute value function that are easy to optimize. One possible approximation is to use the log-sum-exp approximation of the max function\footnote{Other possibilities are the Huber loss, or $|r|\approx \sqrt{r^2+\epsilon}$ for some small $\epsilon$.}:
+\[
+|r| = \max\{r, -r\} \approx \log(\exp(r) + \exp(-r)).
+\]
+Using this approximation, we obtain an objective of the form
+\[
+f(w) {=} \sum_{i=1}^n  \log\left(\exp(w^Tx_i - y_i) + \exp(y_i - w^Tx_i)\right).
+\]
+which is smooth but less sensitive to outliers than the squared error. \blu{Derive
+ the gradient $\nabla f$ of this function with respect to $w$. You should show your work but you do not have to express the final result in matrix notation.}
+
+
+\subsection{Robust Regression}
+\rubric{code:2,reasoning:1}
+
+The class \emph{LinearModelGradient} is the same as \emph{LeastSquares}, except that it fits the least squares model using a gradient descent method. If you run \verb|python main.py -q 4.3| you'll see it produces the same fit as we obtained using the normal equations.
+
+The typical input to a gradient method is a function that, given $w$, returns $f(w)$ and $\nabla f(w)$. See \emph{funObj} in \emph{LinearModelGradient} for an example. Note that the \emph{fit} function of \emph{LinearModelGradient} also has a numerical check that the gradient code is approximately correct, since implementing gradients is often error-prone.\footnote{Sometimes the numerical gradient checker itself can be wrong. See CPSC 303 for a lot more on numerical differentiation.}
+
+An advantage of gradient-based strategies is that they are able to solve
+problems that do not have closed-form solutions, such as the formulation from the
+previous section. The class \emph{LinearModelGradient} has most of the implementation
+of a gradient-based strategy for fitting the robust regression model under the log-sum-exp approximation.
+The only part missing is the function and gradient calculation inside the \emph{funObj} code.
+\blu{Modify \emph{funObj} to implement the objective function and gradient based on the smooth
+approximation to the absolute value function (from the previous section). Hand in your code, as well
+as the plot obtained using this robust regression approach.}
+
+
+
+\end{document}

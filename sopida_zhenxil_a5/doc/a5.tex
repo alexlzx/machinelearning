@@ -1,0 +1,170 @@
+\documentclass{article}
+
+\usepackage{fullpage}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{graphicx}
+\usepackage{parskip}
+\usepackage{amssymb}
+\usepackage{listings} % For displaying code
+
+\begin{document}
+
+% Colors
+\definecolor{blu}{rgb}{0,0,1}
+\def\blu#1{{\color{blu}#1}}
+\definecolor{gre}{rgb}{0,.5,0}
+\def\gre#1{{\color{gre}#1}}
+\definecolor{red}{rgb}{1,0,0}
+\def\red#1{{\color{red}#1}}
+\def\norm#1{\|#1\|}
+\newcommand{\argmin}[1]{\mathop{\hbox{argmin}}_{#1}}
+\newcommand{\argmax}[1]{\mathop{\hbox{argmax}}_{#1}}
+\def\R{\mathbb{R}}
+\newcommand{\fig}[2]{\includegraphics[width=#1\textwidth]{#2}}
+\newcommand{\centerfig}[2]{\begin{center}\includegraphics[width=#1\textwidth]{#2}\end{center}}
+\def\items#1{\begin{itemize}#1\end{itemize}}
+\def\enum#1{\begin{enumerate}#1\end{enumerate}}
+\newcommand{\code}[1]{\lstinputlisting[language=Matlab]{#1}}
+\newcommand{\half}{\frac 1 2}
+\def\argmax{\mathop{\rm arg\,max}}
+\def\argmin{\mathop{\rm arg\,min}}
+\def\rubric#1{\gre{Rubric: \{#1\}}}{}
+
+
+\title{CPSC 340 Assignment 5 (due Friday June 23 at 11:59pm)}
+\date{}
+\maketitle
+
+\vspace{-7em}
+\section*{Instructions}
+\rubric{mechanics:3}
+
+The above points are allocated for following the general homework instructions on GitHub.
+
+\vspace{1em}
+
+Note: This assignment is more open-ended than usual. There aren't always ``correct answers''. 
+Try to have fun with it and learn something along the way. 
+We'll mark generously... no need to go overboard!
+
+
+
+\section{Neural Networks}
+\rubric{reasoning:5}
+
+If you run \texttt{python main.py -q 1} it will train a neural network on the \emph{basisData.pkl} data from Assignment~3. 
+However, in its current form it uses no hidden layers and therefore is just performing linear regression.
+In fact, if you take a look at the figure that is generated, you should see that it matches the figure
+from Assignment~3 Question 1.1. 
+Try to improve the performance of the neural network by adding hidden layers and tuning the other hyperparemeters. 
+\blu{Hand in your plot after changing the code to have better performance, and list the changes you made. Write a couple sentences
+explaining why you think your changes improved the performance. When appropriate, refer to concepts from the course like overfitting
+or optimization.}
+
+To see the list of hyperparameters and their definitions, see the scikit-learn MLPRegressor documentation:
+\url{http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html}. Note: ``MLP'' stands for Multi-Layer Perceptron, 
+which is another name for artificial neural network.\\
+Also: we didn't discuss L-BFGS in class, but it may help to set \verb|solver| to \verb|lbfgs| since the data set is tiny.
+
+
+
+
+\section{Neural Networks with Your Own Data}
+\rubric{reasoning:5}
+
+Try a neural network on the data set of your choosing. 
+You can use a data set that's built into scikit-learn
+(\url{http://scikit-learn.org/stable/datasets/}), or you can use a data set from a previous homework assignment, or something from an area that interests you. 
+If you are doing classification rather than regression, use scikit-learn's MLPClassifier rather than the MLPRegressor that we've provided in the assignment code: \url{http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html}
+
+
+\blu{Try fiddling with the hyperparameters. Write a few sentences about what you tried, what train/validation error you achieved,
+and whether you think neural networks are a good model for your dataset.} Optionally (for glory rather than marks), install Keras/TensorFlow and compare it with
+the scikit-learn neural net. 
+
+
+\section{Recommender Systems}
+
+This question is provided to you in the form of a Jupyter notebook, namely the file 
+\emph{recommender.ipynb} in you \emph{code} directory. 
+It's highly recommended for you to do 
+question 3.1 directly inside the notebook, which will require
+you to install Jupyter notebook and get it running. If you have Anaconda then
+it will already be installed and you can fire it up by typing 
+\verb|jupyter notebook recommender.ipynb|
+from your terminal in the current directory. You can then run a cell with Shift+Enter. 
+
+Note: if, upon starting the notebook, you get an ``Kernel not found'' error,
+that is not a problem. Just select the version of Python you want to use from
+the options provided.
+
+If you don't want to deal with Jupyter notebook, I've also exported the notebook
+to a Python a file
+\emph{recommender.py}. You can work directly from there.
+If you do this, you should at least read through the rendered notebook,
+which you can do by navigating to it on github.ubc.ca from within your web browser. 
+
+Whichever route you go (notebook or .py file), please make it clear in the README
+and be sure to link to the appropriate file so the grader can easily find your work.
+
+By the way, the notebook file is quite long and so it may look very intimidating.
+However, most of it is code that's already provided for you, which you just need to read and interpret.
+The amount of code you need to write isn't much at all.
+
+\subsection{Implementation}
+\rubric{code:8}
+
+Read through the notebook file up to the section entitled \emph{The experiments: methods 1-9}. 
+We've implemented the following models for you already: (1), (2), (3), (5), (7), (8), most of (9). 
+\blu{Implement the remaining cases (4), (6), and the rest of (9).} Some preprocessing is already done for you in (4).
+
+\subsection{Comparing methods}
+\rubric{reasoning:5}
+
+If you are using the Jupyter Notebook, the results are conveniently summarized for you 
+in a table at the bottom of the file.
+\blu{Write a few sentences discussing which methods did better, and why.}
+Discuss this in the context of the fundamental tradeoff: did some methods over/underfit?
+
+
+\subsection{Ridge regression}
+\rubric{reasoning:2}
+
+As mentioned briefly in class, ``Ridge regression'' refers to linear regression with L2-regularization. 
+\blu{Explain why it makes sense to use ridge regression in (6) but not really for (5).}
+Include both a theoretical/intuitive explanation and a quick empirical assessment.
+
+\subsection{Stochastic gradient}
+\rubric{reasoning:2}
+
+\blu{Under what circumstances would it make sense to use stochastic gradient descent instead
+of gradient descent for the models (8) and (9)? What are the pros/cons of doing so?}
+
+\subsection{Validation}
+\rubric{reasoning:2}
+
+We divided the data into training/validation sets by splitting the ratings.
+However, you might also do this by splitting the data differently. For example,
+you could split by movies or by users (e.g., the first 5000 movies are used for training, the rest for validation). 
+\blu{What effect do you anticipate the splitting method
+would have on your different models?}
+
+
+\subsection{Next steps}
+\rubric{reasoning:5}
+
+Personally, I find the results of even model (9) to be disappointing.
+\blu{Discuss some ideas for how you might do better.} Some ideas to get you thinking:
+\begin{enumerate}
+\item What other models might you try? 
+\item Do we need regularization? If so, what type(s)?
+\item Is the squared error loss satisfactory?
+\item Are we solving the optimization problem effectively?
+\item What new data might you collect? 
+\item Is our train/validation procedure reasonable?
+\end{enumerate}
+
+\end{document}
